@@ -12,6 +12,15 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
+  --font-serif: var(--font-playfair);
+  --font-script: var(--font-caveat);
+  --color-pop-rose: var(--pop-rose);
+  --color-pop-amber: var(--pop-amber);
+  --color-pop-amber-dark: var(--pop-amber-dark);
+  --color-lcd-bg: var(--lcd-bg);
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-float-delayed: float 6s ease-in-out 1s infinite;
+  --animate-float-slow: float 8s ease-in-out 0.5s infinite;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -76,6 +85,10 @@
   --chart-4: #525252;
   --chart-5: #404040;
   --radius: 0.625rem;
+  --pop-rose: #F4AEC0;
+  --pop-amber: #F5D78E;
+  --pop-amber-dark: #B8A447;
+  --lcd-bg: #9EB08D;
   --sidebar: #111111;
   --sidebar-foreground: #ededed;
   --sidebar-primary: #ffffff;
@@ -84,6 +97,11 @@
   --sidebar-accent-foreground: #ededed;
   --sidebar-border: #262626;
   --sidebar-ring: #3f3f3f;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
 }
 
 @layer base {

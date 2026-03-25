@@ -57,6 +57,15 @@ export function useAgentCall() {
     try {
       await conversation.endSession();
       setCallState("idle");
+      setAgentMessages((prev) => [
+        ...prev,
+        {
+          id: `call-ended-${Date.now()}`,
+          role: "assistant",
+          content: "Call has completed",
+          type: "status",
+        },
+      ]);
     } catch (error) {
       console.error("Failed to end call", error);
     }
