@@ -38,6 +38,8 @@ export function useAgentCall() {
           dynamicVariables: {
             greeting: "good morning",
             morph_context: agentContext,
+            userId: userId,
+            sessionId: sessionId,
           },
         });
 
