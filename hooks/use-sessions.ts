@@ -23,6 +23,7 @@ export function useSessions(user: User | null) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionDocStatus, setSessionDocStatus] = useState<string | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [vmUrl, setVmUrl] = useState<string | null>(null);
 
   // Load saved session from localStorage
   useEffect(() => {
@@ -58,6 +59,7 @@ export function useSessions(user: User | null) {
           status: data.status ?? undefined,
           createdAt: data.createdAt?.toDate() ?? undefined,
           dumpAudioUrl: data.dumpAudioUrl ?? undefined,
+          vmUrl: data.vmUrl ?? undefined,
         };
       });
       setSessions(items);
@@ -75,13 +77,13 @@ export function useSessions(user: User | null) {
       if (!snapshot.exists()) {
         setSessionDocStatus(null);
         setAudioUrl(null);
+        setVmUrl(null);
         return;
       }
       const data = snapshot.data();
       setSessionDocStatus(data.status ?? null);
-      if (data.dumpAudioUrl) {
-        setAudioUrl(data.dumpAudioUrl);
-      }
+      setAudioUrl(data.dumpAudioUrl ?? null);
+      setVmUrl(data.vmUrl ?? null);
     });
 
     return () => unsubscribe();
@@ -92,6 +94,7 @@ export function useSessions(user: User | null) {
     setSessionId(newSessionId);
     setSessionDocStatus(null);
     setAudioUrl(null);
+    setVmUrl(null);
 
     if (user) {
       localStorage.setItem(
@@ -106,6 +109,9 @@ export function useSessions(user: User | null) {
   const selectSession = useCallback(
     (id: string) => {
       setSessionId(id);
+      setSessionDocStatus(null);
+      setAudioUrl(null);
+      setVmUrl(null);
       if (user) {
         localStorage.setItem(
           LOCAL_SESSION_KEY,
@@ -148,6 +154,7 @@ export function useSessions(user: User | null) {
     sessionId,
     sessionDocStatus,
     audioUrl,
+    vmUrl,
     createNewSession,
     selectSession,
     submitRecording,

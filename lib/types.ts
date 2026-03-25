@@ -19,7 +19,7 @@ export type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
-  type?: "audio-dump" | "status" | "text";
+  type?: "audio-dump" | "status" | "text" | "vm-response";
   audioUrl?: string;
   timestamp?: Date;
 };
@@ -29,4 +29,5 @@ export type SessionItem = {
   status?: string;
   createdAt?: Date;
   dumpAudioUrl?: string;
+  vmUrl?: string;
 };
