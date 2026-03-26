@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
-import { doc, onSnapshot } from "firebase/firestore";
+import { collection, addDoc, doc, onSnapshot, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import type { ChatMessage } from "@/lib/types";
@@ -13,6 +13,7 @@ import { ChatHeader } from "@/components/chat-header";
 import { ChatView } from "@/components/chat-view";
 import { ChatInputBar } from "@/components/chat-input-bar";
 import { AppSidebar } from "@/components/app-sidebar";
+import { NoCreditsModal } from "@/components/no-credits-modal";
 import type { AgentState } from "@/components/ui/orb";
 
 export default function Home() {
@@ -22,6 +23,7 @@ export default function Home() {
   const [authLoading, setAuthLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [credits, setCredits] = useState<number | null>(null);
+  const [noCreditsOpen, setNoCreditsOpen] = useState(false);
 
   // Auth
   useEffect(() => {
@@ -82,10 +84,14 @@ export default function Home() {
 
   // Handle new session
   const handleNewSession = useCallback(() => {
+    if (credits !== null && credits <= 0) {
+      setNoCreditsOpen(true);
+      return;
+    }
     createNewSession();
     resetRecording();
     resetCallState();
-  }, [createNewSession, resetRecording, resetCallState]);
+  }, [credits, createNewSession, resetRecording, resetCallState]);
 
   // Handle session selection
   const handleSelectSession = useCallback(
@@ -99,11 +105,15 @@ export default function Home() {
 
   // Handle start recording
   const handleStartRecording = useCallback(async () => {
+    if (credits !== null && credits <= 0) {
+      setNoCreditsOpen(true);
+      return;
+    }
     if (!sessionId) {
       createNewSession();
     }
     await startRecording();
-  }, [sessionId, createNewSession, startRecording]);
+  }, [credits, sessionId, createNewSession, startRecording]);
 
   // Handle re-record
   const handleReRecord = useCallback(() => {
@@ -272,6 +282,26 @@ export default function Home() {
     }
   }, [sessionDocStatus, callState, endCall]);
 
+  // Handle credit request submission from no-credits modal
+  const handleCreditRequest = useCallback(
+    async (data: { email: string; message: string; xHandle?: string }) => {
+      if (!user) return;
+      try {
+        await addDoc(collection(db, "CreditRequests"), {
+          userId: user.uid,
+          userName: user.displayName || "",
+          email: data.email,
+          message: data.message,
+          xHandle: data.xHandle || null,
+          createdAt: serverTimestamp(),
+        });
+      } catch (err) {
+        console.error("Failed to save credit request", err);
+      }
+    },
+    [user]
+  );
+
   // Auto-create session on first load
   useEffect(() => {
     if (user && !sessionId && !authLoading) {
@@ -322,6 +352,12 @@ export default function Home() {
         activeSessionId={sessionId}
         onSelectSession={handleSelectSession}
         credits={credits}
+      />
+
+      <NoCreditsModal
+        open={noCreditsOpen}
+        onOpenChange={setNoCreditsOpen}
+        onSubmit={handleCreditRequest}
       />
     </div>
   );

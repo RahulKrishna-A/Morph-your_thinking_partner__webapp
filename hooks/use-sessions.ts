@@ -4,11 +4,13 @@ import { useCallback, useEffect, useState } from "react";
 import {
   collection,
   doc,
+  increment,
   onSnapshot,
   orderBy,
   query,
   serverTimestamp,
   setDoc,
+  updateDoc,
 } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import type { User } from "firebase/auth";
@@ -143,6 +145,9 @@ export function useSessions(user: User | null) {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
+
+      const userRef = doc(db, "User", user.uid);
+      await updateDoc(userRef, { credits: increment(-1) });
 
       setAudioUrl(downloadURL);
     },

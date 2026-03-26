@@ -69,7 +69,7 @@ export default function LoginPage() {
 
       const userRef = doc(db, "User", userId);
       const userData = isNewUser
-        ? { name: name.trim(), credits: 2 }
+        ? { name: name.trim(), credits: 1 }
         : { name: name.trim() };
       await setDoc(userRef, userData, { merge: true });
       router.push("/");
