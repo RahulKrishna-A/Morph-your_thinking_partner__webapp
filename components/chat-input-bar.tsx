@@ -118,16 +118,14 @@ export function ChatInputBar({
   const isCallActive = callState === "in_call";
   const canCallAgent = sessionDocStatus === "ready_for_call";
   const isCalling = callState === "calling";
-  const isCompleted = sessionDocStatus === "completed";
+  const isCompleted =
+    sessionDocStatus === "completed" || sessionDocStatus === "complete";
 
-  // Record Thoughts is one-time per session — hide it once any recording exists
-  // (either locally submitted or already on the session doc via audioUrl/status).
   const hasSubmittedRecording =
     recordingState === "submitted" ||
     !!audioUrl ||
-    (sessionDocStatus !== null && sessionDocStatus !== "completed");
+    (sessionDocStatus !== null && !isCompleted);
 
-  // Don't show the bar when session is fully completed
   const showCompletedHint =
     isCompleted && callState === "idle" && recordingState !== "recording";
 

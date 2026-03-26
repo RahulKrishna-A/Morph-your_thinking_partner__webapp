@@ -37,11 +37,21 @@ function getStatusInfo(
     return { label: "In Call", color: "bg-green-500", pulse: true };
   if (callState === "calling")
     return { label: "Connecting", color: "bg-yellow-500", pulse: true };
-  if (sessionStatus === "processing" || sessionStatus === "recording_submitted")
+  if (
+    sessionStatus === "processing" ||
+    sessionStatus === "recording_submitted" ||
+    sessionStatus === "transcribing"
+  )
     return { label: "Processing", color: "bg-yellow-500", pulse: true };
   if (sessionStatus === "ready_for_call")
     return { label: "Ready", color: "bg-green-500", pulse: false };
-  if (sessionStatus === "completed")
+  if (sessionStatus === "in_call" || sessionStatus === "call_in_progress")
+    return { label: "In Call", color: "bg-green-500", pulse: true };
+  if (sessionStatus === "processing_research")
+    return { label: "Researching", color: "bg-blue-500", pulse: true };
+  if (sessionStatus === "building_vm")
+    return { label: "Building Plan", color: "bg-blue-500", pulse: true };
+  if (sessionStatus === "completed" || sessionStatus === "complete")
     return { label: "Completed", color: "bg-muted-foreground", pulse: false };
   return { label: "Idle", color: "bg-muted-foreground/50", pulse: false };
 }

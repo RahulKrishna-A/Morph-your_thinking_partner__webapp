@@ -93,18 +93,33 @@ function getStatusConfig(status?: string): {
       };
     case "processing":
     case "recording_submitted":
+    case "transcribing":
       return {
         dot: "bg-yellow-500 animate-pulse",
         label: "Processing",
         labelClass: "text-yellow-600 dark:text-yellow-400",
       };
     case "in_call":
+    case "call_in_progress":
       return {
         dot: "bg-blue-500 animate-pulse",
         label: "In Call",
         labelClass: "text-blue-600 dark:text-blue-400",
       };
+    case "processing_research":
+      return {
+        dot: "bg-purple-500 animate-pulse",
+        label: "Researching",
+        labelClass: "text-purple-600 dark:text-purple-400",
+      };
+    case "building_vm":
+      return {
+        dot: "bg-indigo-500 animate-pulse",
+        label: "Building",
+        labelClass: "text-indigo-600 dark:text-indigo-400",
+      };
     case "completed":
+    case "complete":
       return {
         dot: "bg-muted-foreground/40",
         label: "Done",

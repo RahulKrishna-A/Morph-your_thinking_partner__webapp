@@ -43,7 +43,7 @@ export default function Home() {
     const unsubscribe = onSnapshot(userRef, (snap) => {
       if (snap.exists()) {
         const data = snap.data();
-        setCredits(typeof data.credits === "number" ? data.credits : null);
+        setCredits(typeof data.credits === "number" ? data.credits : 0);
       }
     });
     return () => unsubscribe();
@@ -133,14 +133,19 @@ export default function Home() {
   const chatMessages = useMemo<ChatMessage[]>(() => {
     const msgs: ChatMessage[] = [];
 
-    // Show audio dump as user message with friendly text
+    const isCompleted = sessionDocStatus === "completed" || sessionDocStatus === "complete";
+
     if (
       recordingState === "submitted" ||
       sessionDocStatus === "recording_submitted" ||
+      sessionDocStatus === "transcribing" ||
       sessionDocStatus === "processing" ||
       sessionDocStatus === "ready_for_call" ||
       sessionDocStatus === "in_call" ||
-      sessionDocStatus === "completed" ||
+      sessionDocStatus === "call_in_progress" ||
+      sessionDocStatus === "processing_research" ||
+      sessionDocStatus === "building_vm" ||
+      isCompleted ||
       audioUrl
     ) {
       msgs.push({
@@ -152,18 +157,20 @@ export default function Home() {
       });
     }
 
-    // For any intermediate status (not completed, not actively in a call),
-    // always surface a human-readable status so users know what's happening.
     const intermediateStatusMessages: Record<string, string> = {
       recording_submitted: "Morph is processing your thoughts...",
+      transcribing: "Morph is transcribing your thoughts...",
       processing: "Morph is thinking about what you said...",
       ready_for_call: "Ready to talk with Morph",
       in_call: "Putting your plan together...",
+      call_in_progress: "Putting your plan together...",
+      processing_research: "Morph is researching your plan...",
+      building_vm: "Morph is building your voice memo...",
     };
 
     if (
       sessionDocStatus &&
-      sessionDocStatus !== "completed" &&
+      !isCompleted &&
       callState === "idle"
     ) {
       const content = intermediateStatusMessages[sessionDocStatus];
@@ -177,11 +184,9 @@ export default function Home() {
       }
     }
 
-    // Agent messages from the live conversation
     msgs.push(...agentMessages);
 
-    // Completed session — always show "Call has ended" divider
-    if (sessionDocStatus === "completed") {
+    if (isCompleted) {
       msgs.push({
         id: "status-completed",
         role: "assistant",
@@ -190,7 +195,6 @@ export default function Home() {
       });
     }
 
-    // VM response — show whenever vmUrl exists on the session doc
     if (vmUrl) {
       msgs.push({
         id: "vm-intro",
@@ -211,11 +215,13 @@ export default function Home() {
     return msgs;
   }, [recordingState, sessionDocStatus, audioUrl, agentMessages, vmUrl, callState]);
 
-  // Status text — keep showing after call ends while processing
   const statusText = useMemo<string | null>(() => {
     if (recordingState === "uploading") return "Sending your thoughts...";
-    if (sessionDocStatus === "recording_submitted")
-      return "Your thoughts have been received...";
+    if (
+      sessionDocStatus === "recording_submitted" ||
+      sessionDocStatus === "transcribing"
+    )
+      return "Transcribing your thoughts...";
     if (sessionDocStatus === "processing")
       return "Morph is thinking about what you said...";
     if (callState === "calling") return "Connecting to Morph...";
@@ -223,32 +229,43 @@ export default function Home() {
       return "Morph is speaking...";
     if (callState === "in_call") return "Listening to you...";
     if (sessionDocStatus === "ready_for_call") return "Ready to talk!";
-    // Post-call processing: call ended locally but session not yet marked completed
-    if (sessionDocStatus === "in_call" && callState === "idle")
+    if (
+      (sessionDocStatus === "in_call" || sessionDocStatus === "call_in_progress") &&
+      callState === "idle"
+    )
       return "Putting your plan together...";
-    if (sessionDocStatus === "completed") return null;
+    if (sessionDocStatus === "processing_research")
+      return "Researching and building your plan...";
+    if (sessionDocStatus === "building_vm")
+      return "Building your voice memo...";
+    if (sessionDocStatus === "completed" || sessionDocStatus === "complete")
+      return null;
     return null;
   }, [recordingState, sessionDocStatus, callState, conversation.isSpeaking]);
 
-  // Orb state
   const agentState = useMemo<AgentState>(() => {
     if (callState === "calling") return "thinking";
     if (callState === "in_call" && conversation.isSpeaking) return "talking";
     if (callState === "in_call") return "listening";
-    // Post-call: animate orb while backend is generating the plan
-    if (sessionDocStatus === "in_call" && callState === "idle") return "thinking";
+    if (
+      (sessionDocStatus === "in_call" || sessionDocStatus === "call_in_progress") &&
+      callState === "idle"
+    )
+      return "thinking";
     if (
       sessionDocStatus === "recording_submitted" ||
+      sessionDocStatus === "transcribing" ||
       sessionDocStatus === "processing"
     )
       return "thinking";
+    if (sessionDocStatus === "processing_research") return "thinking";
+    if (sessionDocStatus === "building_vm") return "thinking";
     return null;
   }, [callState, conversation.isSpeaking, sessionDocStatus]);
 
-  // Safety net: if Firestore marks session completed but WebRTC is still open, end it
   useEffect(() => {
     if (
-      sessionDocStatus === "completed" &&
+      (sessionDocStatus === "completed" || sessionDocStatus === "complete") &&
       (callState === "in_call" || callState === "calling")
     ) {
       endCall();

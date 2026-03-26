@@ -81,6 +81,9 @@ export function ChatView({
                   const isProcessing =
                     message.content.toLowerCase().includes("processing") ||
                     message.content.toLowerCase().includes("thinking") ||
+                    message.content.toLowerCase().includes("transcribing") ||
+                    message.content.toLowerCase().includes("researching") ||
+                    message.content.toLowerCase().includes("building") ||
                     message.content.toLowerCase().includes("received");
 
                   return (

@@ -10,10 +10,15 @@ export type CallState = "idle" | "calling" | "in_call" | "error";
 
 export type SessionStatus =
   | "recording_submitted"
+  | "transcribing"
   | "processing"
   | "ready_for_call"
   | "in_call"
-  | "completed";
+  | "call_in_progress"
+  | "processing_research"
+  | "building_vm"
+  | "completed"
+  | "complete";
 
 export type ChatMessage = {
   id: string;
