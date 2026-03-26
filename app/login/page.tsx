@@ -27,6 +27,7 @@ export default function LoginPage() {
 
   const [step, setStep] = useState<"login" | "name-setup">("login");
   const [userId, setUserId] = useState<string | null>(null);
+  const [isNewUser, setIsNewUser] = useState(false);
   const [name, setName] = useState("");
 
   const handleGoogleLogin = async () => {
@@ -43,6 +44,7 @@ export default function LoginPage() {
         router.push("/");
       } else {
         setUserId(user.uid);
+        setIsNewUser(!userSnap.exists());
         setName(user.displayName || "");
         setStep("name-setup");
       }
@@ -66,7 +68,10 @@ export default function LoginPage() {
       setError(null);
 
       const userRef = doc(db, "User", userId);
-      await setDoc(userRef, { name: name.trim() }, { merge: true });
+      const userData = isNewUser
+        ? { name: name.trim(), credits: 2 }
+        : { name: name.trim() };
+      await setDoc(userRef, userData, { merge: true });
       router.push("/");
     } catch (err: unknown) {
       const firebaseErr = err as { message?: string };

@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
+import { doc, onSnapshot } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import type { ChatMessage } from "@/lib/types";
 import { useSessions } from "@/hooks/use-sessions";
 import { useRecording } from "@/hooks/use-recording";
@@ -20,6 +21,7 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [credits, setCredits] = useState<number | null>(null);
 
   // Auth
   useEffect(() => {
@@ -33,6 +35,19 @@ export default function Home() {
     });
     return () => unsubscribe();
   }, [router]);
+
+  // Real-time credits listener
+  useEffect(() => {
+    if (!user) return;
+    const userRef = doc(db, "User", user.uid);
+    const unsubscribe = onSnapshot(userRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setCredits(typeof data.credits === "number" ? data.credits : null);
+      }
+    });
+    return () => unsubscribe();
+  }, [user]);
 
   // Hooks
   const {
@@ -143,7 +158,7 @@ export default function Home() {
       recording_submitted: "Morph is processing your thoughts...",
       processing: "Morph is thinking about what you said...",
       ready_for_call: "Ready to talk with Morph",
-      in_call: "Processing your session...",
+      in_call: "Putting your plan together...",
     };
 
     if (
@@ -208,6 +223,9 @@ export default function Home() {
       return "Morph is speaking...";
     if (callState === "in_call") return "Listening to you...";
     if (sessionDocStatus === "ready_for_call") return "Ready to talk!";
+    // Post-call processing: call ended locally but session not yet marked completed
+    if (sessionDocStatus === "in_call" && callState === "idle")
+      return "Putting your plan together...";
     if (sessionDocStatus === "completed") return null;
     return null;
   }, [recordingState, sessionDocStatus, callState, conversation.isSpeaking]);
@@ -217,6 +235,8 @@ export default function Home() {
     if (callState === "calling") return "thinking";
     if (callState === "in_call" && conversation.isSpeaking) return "talking";
     if (callState === "in_call") return "listening";
+    // Post-call: animate orb while backend is generating the plan
+    if (sessionDocStatus === "in_call" && callState === "idle") return "thinking";
     if (
       sessionDocStatus === "recording_submitted" ||
       sessionDocStatus === "processing"
@@ -224,6 +244,16 @@ export default function Home() {
       return "thinking";
     return null;
   }, [callState, conversation.isSpeaking, sessionDocStatus]);
+
+  // Safety net: if Firestore marks session completed but WebRTC is still open, end it
+  useEffect(() => {
+    if (
+      sessionDocStatus === "completed" &&
+      (callState === "in_call" || callState === "calling")
+    ) {
+      endCall();
+    }
+  }, [sessionDocStatus, callState, endCall]);
 
   // Auto-create session on first load
   useEffect(() => {
@@ -242,6 +272,7 @@ export default function Home() {
         onNewSession={handleNewSession}
         sessionStatus={sessionDocStatus}
         callState={callState}
+        credits={credits}
       />
 
       <ChatView
@@ -273,6 +304,7 @@ export default function Home() {
         sessions={sessions}
         activeSessionId={sessionId}
         onSelectSession={handleSelectSession}
+        credits={credits}
       />
     </div>
   );

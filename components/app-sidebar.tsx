@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOutIcon, MessageSquareIcon, SparklesIcon } from "lucide-react";
+import { LogOutIcon, MessageSquareIcon, PlusCircleIcon, ZapIcon } from "lucide-react";
 import { signOut, type User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import type { SessionItem } from "@/lib/types";
@@ -23,26 +23,43 @@ interface AppSidebarProps {
   sessions: SessionItem[];
   activeSessionId: string | null;
   onSelectSession: (sessionId: string) => void;
+  credits?: number | null;
 }
 
-function formatSessionDate(date?: Date): string {
-  if (!date) return "";
+type SessionGroup = { label: string; sessions: SessionItem[] };
+
+function groupSessions(sessions: SessionItem[]): SessionGroup[] {
   const now = new Date();
-  const diff = now.getTime() - date.getTime();
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterdayStart = new Date(todayStart.getTime() - 86400000);
+  const weekStart = new Date(todayStart.getTime() - 7 * 86400000);
 
-  if (days === 0) return "Today";
-  if (days === 1) return "Yesterday";
-  if (days < 7) return `${days}d ago`;
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
+  const today: SessionItem[] = [];
+  const yesterday: SessionItem[] = [];
+  const thisWeek: SessionItem[] = [];
+  const older: SessionItem[] = [];
 
-function getSessionName(date?: Date): string {
-  if (!date) return "New Session";
-  const hours = date.getHours();
-  if (hours < 12) return "Morning Session";
-  if (hours < 17) return "Afternoon Session";
-  return "Evening Session";
+  for (const session of sessions) {
+    const d = session.createdAt;
+    if (!d) {
+      today.push(session);
+    } else if (d >= todayStart) {
+      today.push(session);
+    } else if (d >= yesterdayStart) {
+      yesterday.push(session);
+    } else if (d >= weekStart) {
+      thisWeek.push(session);
+    } else {
+      older.push(session);
+    }
+  }
+
+  const groups: SessionGroup[] = [];
+  if (today.length) groups.push({ label: "Today", sessions: today });
+  if (yesterday.length) groups.push({ label: "Yesterday", sessions: yesterday });
+  if (thisWeek.length) groups.push({ label: "This Week", sessions: thisWeek });
+  if (older.length) groups.push({ label: "Earlier", sessions: older });
+  return groups;
 }
 
 function getSessionTime(date?: Date): string {
@@ -54,35 +71,51 @@ function getSessionTime(date?: Date): string {
   });
 }
 
-function getStatusDot(status?: string) {
-  switch (status) {
-    case "ready_for_call":
-      return "bg-green-500";
-    case "processing":
-    case "recording_submitted":
-      return "bg-yellow-500 animate-pulse";
-    case "in_call":
-      return "bg-blue-500 animate-pulse";
-    case "completed":
-      return "bg-muted-foreground";
-    default:
-      return "bg-muted-foreground/50";
-  }
+function getSessionLabel(date?: Date): string {
+  if (!date) return "New Session";
+  const h = date.getHours();
+  if (h < 12) return "Morning Session";
+  if (h < 17) return "Afternoon Session";
+  return "Evening Session";
 }
 
-function getStatusLabel(status?: string) {
+function getStatusConfig(status?: string): {
+  dot: string;
+  label: string;
+  labelClass: string;
+} {
   switch (status) {
     case "ready_for_call":
-      return "Ready";
+      return {
+        dot: "bg-green-500",
+        label: "Ready",
+        labelClass: "text-green-600 dark:text-green-400",
+      };
     case "processing":
     case "recording_submitted":
-      return "Processing";
+      return {
+        dot: "bg-yellow-500 animate-pulse",
+        label: "Processing",
+        labelClass: "text-yellow-600 dark:text-yellow-400",
+      };
     case "in_call":
-      return "In Call";
+      return {
+        dot: "bg-blue-500 animate-pulse",
+        label: "In Call",
+        labelClass: "text-blue-600 dark:text-blue-400",
+      };
     case "completed":
-      return "Done";
+      return {
+        dot: "bg-muted-foreground/40",
+        label: "Done",
+        labelClass: "text-muted-foreground",
+      };
     default:
-      return "New";
+      return {
+        dot: "bg-muted-foreground/20",
+        label: "New",
+        labelClass: "text-muted-foreground/60",
+      };
   }
 }
 
@@ -93,6 +126,7 @@ export function AppSidebar({
   sessions,
   activeSessionId,
   onSelectSession,
+  credits,
 }: AppSidebarProps) {
   const handleSignOut = async () => {
     await signOut(auth);
@@ -107,97 +141,170 @@ export function AppSidebar({
         .toUpperCase()
     : "?";
 
+  const groups = groupSessions(sessions);
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="left"
         className="flex w-80 flex-col gap-0 bg-sidebar p-0"
       >
+        {/* Header */}
         <SheetHeader className="border-b border-sidebar-border px-4 py-4">
-          <div className="flex items-center gap-2">
-            <SparklesIcon className="size-4 text-pop-rose" />
-            <SheetTitle className="font-serif text-lg font-bold text-sidebar-foreground">
-              Sessions
-            </SheetTitle>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="size-[22px] shrink-0 rounded-full bg-linear-to-br from-[#CADCFC] to-[#8BA9C4] ring-1 ring-sidebar-border shadow-sm" />
+              <div>
+                <SheetTitle className="font-serif text-base font-bold leading-none text-sidebar-foreground">
+                  Morph
+                </SheetTitle>
+                <p className="mt-0.5 text-[10px] text-muted-foreground/70">
+                  your thinking history
+                </p>
+              </div>
+            </div>
+            <div className="flex size-7 items-center justify-center rounded-lg bg-sidebar-accent text-muted-foreground">
+              <PlusCircleIcon className="size-3.5" />
+            </div>
           </div>
         </SheetHeader>
 
+        {/* Session list */}
         <ScrollArea className="min-h-0 flex-1 overflow-hidden">
-          <div className="flex flex-col gap-1 p-2">
-            {sessions.length === 0 && (
-              <div className="flex flex-col items-center gap-2 px-3 py-10 text-center">
-                <MessageSquareIcon className="size-8 text-muted-foreground/30" />
-                <p className="text-sm text-muted-foreground">
-                  No sessions yet
-                </p>
-                <p className="text-xs text-muted-foreground/70">
-                  Tap the + button to start one
-                </p>
-              </div>
-            )}
-            {sessions.map((session) => (
-              <button
-                key={session.sessionId}
-                onClick={() => {
-                  onSelectSession(session.sessionId);
-                  onOpenChange(false);
-                }}
-                className={cn(
-                  "group flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm transition-all hover:bg-sidebar-accent",
-                  activeSessionId === session.sessionId &&
-                    "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                )}
-              >
-                <div
-                  className={cn(
-                    "flex size-9 shrink-0 items-center justify-center rounded-lg border border-sidebar-border bg-background/50",
-                    activeSessionId === session.sessionId &&
-                      "border-pop-rose/30 bg-pop-rose/10"
-                  )}
-                >
-                  <MessageSquareIcon
-                    className={cn(
-                      "size-4 text-muted-foreground",
-                      activeSessionId === session.sessionId && "text-pop-rose"
-                    )}
-                  />
+          <div className="flex flex-col p-2 pb-3">
+            {sessions.length === 0 ? (
+              <div className="flex flex-col items-center gap-3 px-4 py-12 text-center">
+                <div className="flex size-12 items-center justify-center rounded-2xl border border-sidebar-border bg-sidebar-accent/50">
+                  <MessageSquareIcon className="size-5 text-muted-foreground/40" />
                 </div>
-                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="truncate font-medium text-sidebar-foreground">
-                    {getSessionName(session.createdAt)}
-                  </span>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>{formatSessionDate(session.createdAt)}</span>
-                    {session.createdAt && (
-                      <>
-                        <span className="text-border">·</span>
-                        <span>{getSessionTime(session.createdAt)}</span>
-                      </>
-                    )}
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    No sessions yet
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground/60">
+                    Tap + to start your first one
+                  </p>
+                </div>
+              </div>
+            ) : (
+              groups.map((group) => (
+                <div key={group.label} className="mb-1">
+                  {/* Group label */}
+                  <div className="px-3 pb-1 pt-3">
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
+                      {group.label}
+                    </span>
+                  </div>
+
+                  {/* Sessions in group */}
+                  <div className="flex flex-col gap-0.5">
+                    {group.sessions.map((session) => {
+                      const isActive = activeSessionId === session.sessionId;
+                      const sc = getStatusConfig(session.status);
+
+                      return (
+                        <button
+                          key={session.sessionId}
+                          onClick={() => {
+                            onSelectSession(session.sessionId);
+                            onOpenChange(false);
+                          }}
+                          className={cn(
+                            "group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all duration-150",
+                            isActive
+                              ? "bg-sidebar-accent shadow-sm"
+                              : "hover:bg-sidebar-accent/60"
+                          )}
+                        >
+                          {/* Icon */}
+                          <div
+                            className={cn(
+                              "flex size-8 shrink-0 items-center justify-center rounded-lg border",
+                              isActive
+                                ? "border-pop-rose/30 bg-pop-rose/10"
+                                : "border-sidebar-border bg-background/40"
+                            )}
+                          >
+                            <MessageSquareIcon
+                              className={cn(
+                                "size-3.5",
+                                isActive
+                                  ? "text-pop-rose"
+                                  : "text-muted-foreground"
+                              )}
+                            />
+                          </div>
+
+                          {/* Content */}
+                          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                            <span
+                              className={cn(
+                                "truncate text-sm font-medium",
+                                isActive
+                                  ? "text-sidebar-foreground"
+                                  : "text-sidebar-foreground/80"
+                              )}
+                            >
+                              {getSessionLabel(session.createdAt)}
+                            </span>
+                            {session.createdAt && (
+                              <span className="text-[11px] text-muted-foreground/60">
+                                {getSessionTime(session.createdAt)}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Status */}
+                          <div className="flex shrink-0 items-center gap-1.5">
+                            <span
+                              className={cn(
+                                "text-[10px] font-medium",
+                                sc.labelClass
+                              )}
+                            >
+                              {sc.label}
+                            </span>
+                            <span
+                              className={cn(
+                                "size-1.5 rounded-full",
+                                sc.dot
+                              )}
+                            />
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                  <div
-                    className={cn(
-                      "size-2 shrink-0 rounded-full",
-                      getStatusDot(session.status)
-                    )}
-                  />
-                  <span className="text-[10px] text-muted-foreground/70">
-                    {getStatusLabel(session.status)}
-                  </span>
-                </div>
-              </button>
-            ))}
+              ))
+            )}
           </div>
         </ScrollArea>
 
         <Separator className="bg-sidebar-border" />
 
-        {/* User profile + sign out */}
-        <div className="p-3">
+        {/* Footer */}
+        <div className="p-3 space-y-2">
+          {/* Credits */}
+          {credits !== null && credits !== undefined && (
+            <div className="flex items-center gap-2.5 rounded-xl border border-sidebar-border bg-sidebar-accent/50 px-3 py-2.5">
+              <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-pop-amber/15">
+                <ZapIcon className="size-3.5 text-pop-amber" />
+              </div>
+              <div className="flex flex-1 flex-col gap-0.5">
+                <span className="text-xs font-semibold text-sidebar-foreground">
+                  {credits} {credits === 1 ? "credit" : "credits"} remaining
+                </span>
+                <span className="text-[10px] text-muted-foreground/70">
+                  used for Morph calls
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* User profile */}
           <div className="flex items-center gap-3 rounded-xl px-2 py-2">
-            <Avatar className="size-9 border border-sidebar-border">
+            <Avatar className="size-8 shrink-0 border border-sidebar-border">
               {user?.photoURL ? (
                 <AvatarImage
                   src={user.photoURL}
@@ -208,11 +315,11 @@ export function AppSidebar({
                 {initials}
               </AvatarFallback>
             </Avatar>
-            <div className="flex min-w-0 flex-1 flex-col">
+            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
               <span className="truncate text-sm font-medium text-sidebar-foreground">
                 {user?.displayName || "User"}
               </span>
-              <span className="truncate text-xs text-muted-foreground">
+              <span className="truncate text-[11px] text-muted-foreground">
                 {user?.email || ""}
               </span>
             </div>
@@ -220,10 +327,10 @@ export function AppSidebar({
               variant="ghost"
               size="icon"
               onClick={handleSignOut}
-              className="shrink-0 text-muted-foreground hover:text-destructive"
+              className="size-7 shrink-0 text-muted-foreground hover:text-destructive"
               aria-label="Sign Out"
             >
-              <LogOutIcon className="size-4" />
+              <LogOutIcon className="size-3.5" />
             </Button>
           </div>
         </div>
