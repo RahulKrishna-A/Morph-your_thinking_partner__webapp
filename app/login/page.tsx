@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { signInWithPopup } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -180,6 +181,16 @@ export default function LoginPage() {
             <>
               {/* Heading */}
               <div className="mb-8 text-center">
+                <div className="mb-5 flex justify-center">
+                  <Image
+                    src="/Logo.png"
+                    alt="Morph"
+                    width={40}
+                    height={40}
+                    className="size-10 object-contain dark:invert"
+                    priority
+                  />
+                </div>
                 <h1 className="font-serif text-[38px] leading-[0.95] font-bold tracking-tight text-foreground sm:text-[44px]">
                   Hey there
                   <br />
@@ -244,6 +255,16 @@ export default function LoginPage() {
           {step === "name-setup" && (
             <form onSubmit={handleSaveName}>
               <div className="mb-8 text-center">
+                <div className="mb-5 flex justify-center">
+                  <Image
+                    src="/Logo.png"
+                    alt="Morph"
+                    width={40}
+                    height={40}
+                    className="size-10 object-contain dark:invert"
+                    priority
+                  />
+                </div>
                 <h2 className="font-serif text-[32px] leading-[0.95] font-bold tracking-tight text-foreground sm:text-[38px]">
                   Almost there
                   <br />

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { LogOutIcon, MessageSquareIcon, PlusCircleIcon, ZapIcon } from "lucide-react";
 import { signOut, type User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
@@ -168,7 +169,13 @@ export function AppSidebar({
         <SheetHeader className="border-b border-sidebar-border px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="size-[22px] shrink-0 rounded-full bg-linear-to-br from-[#CADCFC] to-[#8BA9C4] ring-1 ring-sidebar-border shadow-sm" />
+              <Image
+                src="/Logo.png"
+                alt=""
+                width={22}
+                height={22}
+                className="size-[22px] shrink-0 object-contain dark:invert"
+              />
               <div>
                 <SheetTitle className="font-serif text-base font-bold leading-none text-sidebar-foreground">
                   Morph

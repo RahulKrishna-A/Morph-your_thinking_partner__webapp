@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   LogOutIcon,
   MenuIcon,
@@ -118,8 +119,14 @@ export function ChatHeader({
 
       {/* Center: Brand */}
       <div className="absolute left-1/2 flex -translate-x-1/2 items-center gap-2">
-        {/* Orb-coloured gradient dot as mini logo mark */}
-        <div className="size-[18px] shrink-0 rounded-full bg-linear-to-br from-[#CADCFC] to-[#8BA9C4] ring-1 ring-border/40 shadow-sm" />
+        <Image
+          src="/Logo.png"
+          alt=""
+          width={18}
+          height={18}
+          className="size-[18px] shrink-0 object-contain dark:invert"
+          priority
+        />
         <h1 className="font-serif text-base font-bold tracking-tight text-foreground">
           Morph
         </h1>

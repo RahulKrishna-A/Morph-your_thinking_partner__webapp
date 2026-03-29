@@ -25,6 +25,10 @@ const caveat = Caveat({
 export const metadata: Metadata = {
   title: "Morph — Your Thinking Partner",
   description: "Record your thoughts, then talk them through with Morph.",
+  icons: {
+    icon: "/Logo.png",
+    apple: "/Logo.png",
+  },
 };
 
 export const viewport: Viewport = {
