@@ -284,15 +284,14 @@ export default function Home() {
 
   // Handle credit request submission from no-credits modal
   const handleCreditRequest = useCallback(
-    async (data: { email: string; message: string; xHandle?: string }) => {
+    async (data: { email: string; socialHandle?: string }) => {
       if (!user) return;
       try {
         await addDoc(collection(db, "CreditRequests"), {
           userId: user.uid,
           userName: user.displayName || "",
           email: data.email,
-          message: data.message,
-          xHandle: data.xHandle || null,
+          socialHandle: data.socialHandle?.trim() || null,
           createdAt: serverTimestamp(),
         });
       } catch (err) {
@@ -357,6 +356,7 @@ export default function Home() {
       <NoCreditsModal
         open={noCreditsOpen}
         onOpenChange={setNoCreditsOpen}
+        defaultEmail={user?.email}
         onSubmit={handleCreditRequest}
       />
     </div>

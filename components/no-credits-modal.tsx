@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog } from "@base-ui/react/dialog";
 import { ZapIcon, XIcon, SendIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,44 +8,53 @@ import { Button } from "@/components/ui/button";
 interface NoCreditsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: { email: string; message: string; xHandle?: string }) => void;
+  /** Pre-filled when the modal opens (e.g. account email). */
+  defaultEmail?: string | null;
+  onSubmit: (data: { email: string; socialHandle?: string }) => void;
 }
 
 export function NoCreditsModal({
   open,
   onOpenChange,
+  defaultEmail,
   onSubmit,
 }: NoCreditsModalProps) {
   const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
-  const [xHandle, setXHandle] = useState("");
+  const [socialHandle, setSocialHandle] = useState("");
   const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setEmail((defaultEmail ?? "").trim());
+      setSocialHandle("");
+      setSubmitted(false);
+    }
+  }, [open, defaultEmail]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !message.trim()) return;
+    if (!email.trim()) return;
+    const handle = socialHandle.trim();
     onSubmit({
       email: email.trim(),
-      message: message.trim(),
-      xHandle: xHandle.trim() || undefined,
+      ...(handle ? { socialHandle: handle } : {}),
     });
     setSubmitted(true);
   };
 
-  const handleClose = () => {
-    onOpenChange(false);
-    if (submitted) {
+  const handleOpenChange = (nextOpen: boolean) => {
+    onOpenChange(nextOpen);
+    if (!nextOpen && submitted) {
       setTimeout(() => {
         setEmail("");
-        setMessage("");
-        setXHandle("");
+        setSocialHandle("");
         setSubmitted(false);
       }, 300);
     }
   };
 
   return (
-    <Dialog.Root open={open} onOpenChange={handleClose}>
+    <Dialog.Root open={open} onOpenChange={handleOpenChange}>
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm transition-opacity duration-200 data-ending-style:opacity-0 data-starting-style:opacity-0" />
         <Dialog.Popup className="fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 transition duration-200 data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0">
@@ -82,8 +91,9 @@ export function NoCreditsModal({
                       Credits Used Up
                     </Dialog.Title>
                     <Dialog.Description className="mt-2 text-sm text-muted-foreground">
-                      You&apos;ve used all your free credits. Drop us a message
-                      and we&apos;ll get you set up with more.
+                      You&apos;ve used all your free credits. Confirm your email (and
+                      optionally add your X or LinkedIn handle) so we can get you more
+                      credits.
                     </Dialog.Description>
                   </div>
 
@@ -109,45 +119,27 @@ export function NoCreditsModal({
 
                     <div>
                       <label
-                        htmlFor="nc-message"
+                        htmlFor="nc-social-handle"
                         className="mb-1 block text-xs font-medium text-muted-foreground"
                       >
-                        Message
-                      </label>
-                      <textarea
-                        id="nc-message"
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        placeholder="Tell us how you're using Morph..."
-                        required
-                        rows={3}
-                        className="block w-full resize-none rounded-xl border-2 border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder-muted-foreground/60 shadow-[2px_3px_0px_theme(--color-border)] transition-all focus:border-pop-rose focus:shadow-[2px_3px_0px_theme(--color-pop-rose)] focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="nc-x-handle"
-                        className="mb-1 block text-xs font-medium text-muted-foreground"
-                      >
-                        X Handle{" "}
-                        <span className="text-muted-foreground/50">
-                          — optional (easier to communicate)
+                        X or LinkedIn handle{" "}
+                        <span className="font-normal text-muted-foreground/60">
+                          (optional)
                         </span>
                       </label>
                       <input
                         type="text"
-                        id="nc-x-handle"
-                        value={xHandle}
-                        onChange={(e) => setXHandle(e.target.value)}
-                        placeholder="@yourhandle"
+                        id="nc-social-handle"
+                        value={socialHandle}
+                        onChange={(e) => setSocialHandle(e.target.value)}
+                        placeholder="@xhandle or linkedin.com/in/you"
                         className="block w-full rounded-xl border-2 border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder-muted-foreground/60 shadow-[2px_3px_0px_theme(--color-border)] transition-all focus:border-pop-rose focus:shadow-[2px_3px_0px_theme(--color-pop-rose)] focus:outline-none"
                       />
                     </div>
 
                     <button
                       type="submit"
-                      disabled={!email.trim() || !message.trim()}
+                      disabled={!email.trim()}
                       className="group relative mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-foreground bg-foreground px-5 py-3 text-sm font-semibold text-background shadow-[4px_5px_0px_theme(--color-border)] transition-all duration-200 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_3px_0px_theme(--color-border)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none disabled:opacity-50"
                     >
                       <SendIcon className="size-4" />
@@ -168,7 +160,7 @@ export function NoCreditsModal({
                     We&apos;ll get back to you shortly. Thanks for using Morph!
                   </p>
                   <button
-                    onClick={handleClose}
+                    onClick={() => handleOpenChange(false)}
                     className="mt-5 inline-flex items-center gap-2 rounded-xl border-2 border-border px-5 py-2.5 text-sm font-medium text-foreground shadow-[3px_4px_0px_theme(--color-border)] transition-all hover:translate-x-px hover:translate-y-px hover:shadow-[2px_3px_0px_theme(--color-border)]"
                   >
                     Got it
