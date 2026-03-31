@@ -9,41 +9,41 @@ Morph is a voice-first AI thinking companion. You dump your thoughts as voice re
 ## Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        FRONTEND (this repo)                        │
-│                     Next.js 16 · React 19 · TS                     │
-│                                                                     │
-│  ┌──────────┐   ┌──────────────┐   ┌───────────────────────────┐   │
-│  │  /login   │   │   / (home)    │   │      Components          │   │
-│  │  Google   │   │  Chat shell   │   │  ChatHeader · ChatView   │   │
-│  │  OAuth    │──▶│  Recording    │   │  ChatInputBar · Sidebar  │   │
-│  │  + Name   │   │  Agent call   │   │  NoCreditsModal · Orb    │   │
-│  └──────────┘   └──────┬───────┘   └───────────────────────────┘   │
-│                         │                                           │
-│         ┌───────────────┼───────────────┐                          │
-│         ▼               ▼               ▼                          │
-│   ┌──────────┐   ┌──────────┐   ┌──────────────┐                  │
-│   │  use-     │   │  use-     │   │  use-agent-  │                  │
-│   │  sessions │   │  recording│   │  call        │                  │
-│   └─────┬────┘   └──────────┘   └──────┬───────┘                  │
-│         │                               │                          │
-└─────────┼───────────────────────────────┼──────────────────────────┘
-          │                               │
-          ▼                               ▼
-┌──────────────────────┐   ┌──────────────────────────────────┐
-│   Firebase Services   │   │   Google Cloud Function            │
-│                        │   │   (onAgentCall)                    │
-│  • Auth (Google)       │   │                                    │
-│  • Firestore           │   │  Returns conversationToken +       │
-│    – User/{uid}        │   │  agentContext for ElevenLabs       │
-│    – User/{uid}/       │   └──────────────┬─────────────────────┘
-│      Sessions/{id}     │                  │
-│    – CreditRequests    │                  ▼
-│  • Storage             │   ┌──────────────────────────────────┐
-│    – audio/{uid}/      │   │      ElevenLabs WebRTC            │
-│      {sessionId}/      │   │      Live voice conversation      │
-│      dump.webm         │   │      with AI agent                │
-└──────────────────────┘   └──────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                               FRONTEND (this repo)                           │
+│                        Next.js 16 · React 19 · TypeScript                     │
+│                                                                              │
+│  ┌──────────────┐     ┌──────────────┐     ┌──────────────────────────────┐   │
+│  │   /login     │     │   / (home)   │     │         Components           │   │
+│  │  Google      │     │  Chat Shell  │     │  ChatHeader · ChatView       │   │
+│  │  OAuth       │ ──▶ │  Recording   │     │  ChatInputBar · Sidebar      │   │
+│  │  + Name      │     │  Agent Call  │     │  NoCreditsModal · Orb        │   │
+│  └──────────────┘     └──────┬───────┘     └──────────────────────────────┘   │
+│                              │                                               │
+│        ┌─────────────────────┼─────────────────────┐                         │
+│        ▼                     ▼                     ▼                         │
+│   ┌──────────────┐   ┌──────────────┐   ┌────────────────┐                  │
+│   │ use-sessions │   │ use-recording│   │ use-agent-call │                  │
+│   └──────┬───────┘   └──────────────┘   └──────┬─────────┘                  │
+│          │                                    │                            │
+└──────────┼────────────────────────────────────┼────────────────────────────┘
+           │                                    │
+           ▼                                    ▼
+┌──────────────────────────────┐   ┌──────────────────────────────────────────┐
+│       Firebase Services      │   │        Google Cloud Function             │
+│                              │   │            (onAgentCall)                 │
+│  • Auth (Google)             │   │                                          │
+│  • Firestore                 │   │  Returns:                                │
+│    – User/{uid}              │   │   • conversationToken                    │
+│    – User/{uid}/Sessions/{id}│   │   • agentContext (for ElevenLabs)        │
+│    – CreditRequests          │   └───────────────┬──────────────────────────┘
+│  • Storage                   │                   │
+│    – audio/{uid}/{sessionId} │                   ▼
+│      /dump.webm              │   ┌──────────────────────────────────────────┐
+└──────────────────────────────┘   │         ElevenLabs WebRTC                │
+                                   │     Live voice conversation with AI      │
+                                   │                agent + Firecrawl search  │
+                                   └──────────────────────────────────────────┘
 ```
 
 ---
@@ -236,7 +236,7 @@ The app is deployable to **Vercel** (recommended), **Firebase Hosting**, or any 
 
 ---
 
-## Backend (Coming Soon)
+## Backend (Open Sourcing Soon)
 
 The backend powering Morph includes:
 
